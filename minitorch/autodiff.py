@@ -22,8 +22,11 @@ def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) 
     Returns:
         An approximation of $f'_i(x_0, \ldots, x_{n-1})$
     """
-    # TODO: Implement for Task 1.1.
-    raise NotImplementedError('Need to implement for Task 1.1')
+    left = list(vals)
+    left[arg] -= epsilon / 2
+    right = list(vals)
+    right[arg] += epsilon / 2
+    return (f(*right) - f(*left)) / epsilon
 
 
 variable_count = 1
@@ -61,8 +64,23 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     Returns:
         Non-constant Variables in topological order starting from the right.
     """
-    # TODO: Implement for Task 1.4.
-    raise NotImplementedError('Need to implement for Task 1.4')
+    sorted_nodes = []
+    visited = []
+
+    def visit(node: Variable):
+        nonlocal sorted_nodes
+        nonlocal visited
+        if node.name in visited:
+            return
+        for parent in node.parents:
+            if not parent.is_constant():
+                visit(parent)
+        visited.append(node.name)
+        sorted_nodes.append(node)
+
+    visit(variable)
+    sorted_nodes.reverse()
+    return sorted_nodes
 
 
 def backpropagate(variable: Variable, deriv: Any) -> None:
@@ -76,8 +94,24 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
 
     No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
     """
-    # TODO: Implement for Task 1.4.
-    raise NotImplementedError('Need to implement for Task 1.4')
+
+    def accumulate(key, value):
+        if key in derivs.keys():
+            derivs[key] += value
+        else:
+            derivs[key] = value
+
+    queue = topological_sort(variable)
+    derivs = {variable.name: deriv}
+    for node in queue:
+        if node.is_leaf():
+            print("accumulate", node.name, derivs)
+            node.accumulate_derivative(derivs[node.name])
+        else:
+            d_out = derivs[node.name]
+            new_derivs = dict(node.chain_rule(d_out))
+            for parent in node.parents:
+                accumulate(parent.name, new_derivs[parent.name])
 
 
 @dataclass
